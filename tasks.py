@@ -1,3 +1,4 @@
+import shutil
 from os import path
 
 from invoke import task
@@ -29,6 +30,7 @@ def dist(c, common=False, core=False, selenium=False, images=False, prod=False):
             common, core, selenium, images, full_path=True, path_as_str=True
         )
     )
+    retrieve_js(c)
     dest = "pypi" if prod else "test"
     for pack_path in packages:
         with c.cd(pack_path):
@@ -155,10 +157,33 @@ def test_run_integration(c):
     c.run("pytest tests/test_integration.py")
 
 
+@task
 def install_precommit_hook(c):
     c.run("pip install pre-commit")
     c.run("pre-commit install")
 
 
+@task
 def remove_precommit_hook(c):
     c.run("pre-commit uninstall")
+
+
+@task
+def retrieve_js(c):
+    for pack in _packages_resolver(selenium=True, full_path=True):
+        with c.cd(path.join(pack, "applitools/selenium/node_resources")):
+            c.run("npm update", echo=True)
+        move_js_resources_to(pack)
+
+
+def move_js_resources_to(pack):
+    paths = [
+        "dom-capture/dist/captureDom.js",
+        "dom-snapshot/dist/processPage.js",
+        "dom-snapshot/dist/processPageAndSerialize.js",
+    ]
+    node_resources = path.join(pack, "applitools/selenium/node_resources/")
+    node_modules = path.join(node_resources, "node_modules/@applitools")
+    for pth in paths:
+        from_ = path.join(node_modules, pth)
+        shutil.copy(from_, dst=node_resources)

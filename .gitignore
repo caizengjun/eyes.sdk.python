@@ -192,3 +192,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+/eyes_selenium/applitools/selenium/node_resources/node_modules/
